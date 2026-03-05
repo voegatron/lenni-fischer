@@ -1,0 +1,85 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+body{font-family:'Nunito',sans-serif;background:#0a1628}
+canvas{display:block;width:100%;height:100%}
+.ui-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+.ui-overlay *{pointer-events:auto}
+.score-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:linear-gradient(180deg,rgba(10,22,40,0.85) 0%,transparent 100%)}
+.score-item{display:flex;align-items:center;gap:8px;color:#fff;font-family:'Fredoka One',cursive;font-size:18px;text-shadow:0 2px 8px rgba(0,0,0,0.5)}
+.score-item .icon{font-size:24px}.score-item .value{color:#ffd700}
+.avatar-container{position:absolute;top:58px;left:20px;display:flex;align-items:center;gap:10px}
+.avatar-img{width:48px;height:48px;border-radius:50%;border:3px solid rgba(255,215,0,0.5);object-fit:cover;background:rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.4)}
+.avatar-name{font-family:'Fredoka One',cursive;font-size:14px;color:#8ec5fc;text-shadow:0 2px 6px rgba(0,0,0,0.4)}
+.cast-btn{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff6b4a,#e63946);border:4px solid rgba(255,255,255,0.3);color:#fff;font-family:'Fredoka One',cursive;font-size:12px;cursor:pointer;box-shadow:0 6px 30px rgba(230,57,70,0.5),inset 0 -3px 8px rgba(0,0,0,0.2);transition:all 0.15s ease;display:flex;align-items:center;justify-content:center;text-shadow:0 1px 3px rgba(0,0,0,0.3);letter-spacing:0.5px}
+.cast-btn:active{transform:translateX(-50%) scale(0.92)}
+.cast-btn.reeling{background:radial-gradient(circle at 35% 35%,#4aafff,#2196f3);box-shadow:0 6px 30px rgba(33,150,243,0.5),inset 0 -3px 8px rgba(0,0,0,0.2);animation:pulse .6s ease-in-out infinite}
+.cast-btn.hooked{background:radial-gradient(circle at 35% 35%,#ffca28,#f9a825);box-shadow:0 6px 30px rgba(249,168,37,0.6),inset 0 -3px 8px rgba(0,0,0,0.2);animation:shake .15s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 6px 30px rgba(33,150,243,0.5)}50%{box-shadow:0 6px 50px rgba(33,150,243,0.8)}}
+@keyframes shake{0%,100%{transform:translateX(-50%) rotate(-2deg)}50%{transform:translateX(-50%) rotate(2deg)}}
+.catch-popup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(145deg,#1a2d4a,#0f1f35);border:3px solid rgba(255,215,0,0.4);border-radius:24px;padding:30px 40px;text-align:center;opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 40px rgba(255,215,0,0.1);z-index:100;max-width:90vw}
+.catch-popup.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+.catch-popup .fish-visual{margin-bottom:10px;display:block;animation:fishBounce .8s ease-in-out infinite}
+.catch-popup .fish-visual img{width:80px;height:80px;object-fit:contain}
+.catch-popup .fish-visual .emoji-fallback{font-size:64px}
+@keyframes fishBounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-10px) rotate(5deg)}}
+.catch-popup .fish-name{font-family:'Fredoka One',cursive;font-size:24px;color:#ffd700;margin-bottom:4px}
+.catch-popup .fish-weight{font-size:16px;color:#8ec5fc;margin-bottom:4px}
+.catch-popup .fish-rarity{font-size:13px;font-weight:700;padding:3px 12px;border-radius:20px;display:inline-block;margin-bottom:16px}
+.catch-popup .fish-coins{font-family:'Fredoka One',cursive;font-size:20px;color:#ffd700}
+.catch-popup .ok-btn{margin-top:16px;padding:10px 40px;border-radius:30px;background:linear-gradient(135deg,#ffd700,#f9a825);border:none;font-family:'Fredoka One',cursive;font-size:16px;color:#1a2d4a;cursor:pointer;box-shadow:0 4px 15px rgba(255,215,0,0.3)}
+.rarity-common{background:rgba(160,160,160,0.25);color:#b0b0b0}
+.rarity-uncommon{background:rgba(76,175,80,0.25);color:#66bb6a}
+.rarity-rare{background:rgba(33,150,243,0.25);color:#42a5f5}
+.rarity-epic{background:rgba(171,71,188,0.25);color:#ba68c8}
+.rarity-legendary{background:rgba(255,215,0,0.25);color:#ffd700}
+.rarity-mythical{background:linear-gradient(135deg,rgba(255,50,50,0.25),rgba(255,150,0,0.25),rgba(255,215,0,0.25),rgba(50,255,50,0.25),rgba(50,150,255,0.25),rgba(150,50,255,0.25));color:#ff6ec7;text-shadow:0 0 10px rgba(255,110,199,0.5);animation:mythGlow 2s ease-in-out infinite}
+@keyframes mythGlow{0%,100%{text-shadow:0 0 10px rgba(255,110,199,0.5)}50%{text-shadow:0 0 20px rgba(255,110,199,0.8),0 0 30px rgba(255,215,0,0.3)}}
+.depth-meter{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:8px;height:180px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden;display:none}
+.depth-meter.show{display:block}
+.depth-fill{position:absolute;bottom:0;width:100%;background:linear-gradient(0deg,#2196f3,#64b5f6);border-radius:10px;transition:height .3s ease}
+.depth-label{position:absolute;right:30px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.5);font-size:11px;font-weight:700;writing-mode:vertical-rl;letter-spacing:2px;display:none}
+.depth-label.show{display:block}
+.start-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#0a1628 0%,#142a4a 40%,#1a5276 70%,#1a7a8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity .6s ease}
+.start-screen.hidden{opacity:0;pointer-events:none}
+.start-title{font-family:'Fredoka One',cursive;font-size:clamp(32px,8vw,60px);color:#fff;text-shadow:0 4px 20px rgba(33,150,243,0.5);margin-bottom:8px}
+.start-subtitle{font-size:clamp(14px,3vw,18px);color:#8ec5fc;margin-bottom:20px;font-weight:600}
+.start-boat-preview{max-width:min(300px,75vw);max-height:160px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 8px 25px rgba(0,0,0,0.5));animation:boatFloat 3s ease-in-out infinite}
+.start-boat-preview.hidden{display:none}
+.start-fish-fallback{font-size:80px;margin-bottom:20px;animation:fishBounce 2s ease-in-out infinite}
+@keyframes boatFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}
+.start-avatar-area{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
+.start-avatar-img{width:80px;height:80px;border-radius:50%;border:4px solid rgba(255,215,0,0.5);object-fit:cover;background:rgba(255,255,255,0.1);box-shadow:0 6px 25px rgba(0,0,0,0.5);margin-bottom:10px}
+.start-avatar-img.hidden{display:none}
+.player-name-label{font-family:'Fredoka One',cursive;font-size:16px;color:#8ec5fc;margin-bottom:6px}
+.name-input{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:8px 16px;color:#fff;font-family:'Nunito',sans-serif;font-size:16px;text-align:center;width:200px;outline:none}
+.name-input::placeholder{color:rgba(255,255,255,0.3)}.name-input:focus{border-color:rgba(142,197,252,0.5)}
+.start-btn{padding:16px 60px;border-radius:50px;background:linear-gradient(135deg,#ff6b4a,#e63946);border:3px solid rgba(255,255,255,0.2);color:#fff;font-family:'Fredoka One',cursive;font-size:22px;cursor:pointer;box-shadow:0 8px 40px rgba(230,57,70,0.4);transition:transform .15s ease}
+.start-btn:active{transform:scale(0.95)}
+.start-tips{margin-top:30px;color:rgba(255,255,255,0.5);font-size:13px;text-align:center;line-height:1.8;max-width:320px}
+.collection-btn{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.15);color:#8ec5fc;font-family:'Fredoka One',cursive;font-size:12px;padding:6px 16px;border-radius:20px;cursor:pointer;backdrop-filter:blur(10px)}
+.collection-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,22,40,0.95);z-index:150;display:none;flex-direction:column;overflow-y:auto;padding:20px;backdrop-filter:blur(20px)}
+.collection-modal.show{display:flex}
+.collection-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-shrink:0}
+.collection-title{font-family:'Fredoka One',cursive;font-size:24px;color:#ffd700}
+.close-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:20px;cursor:pointer}
+.collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;flex:1}
+.fish-card{background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.08);border-radius:16px;padding:12px;text-align:center}
+.fish-card.caught{border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.05)}
+.fish-card.mythical-card{border-color:rgba(255,110,199,0.5);background:linear-gradient(135deg,rgba(255,50,50,0.05),rgba(150,50,255,0.05));animation:mythBorder 3s ease-in-out infinite}
+@keyframes mythBorder{0%,100%{border-color:rgba(255,110,199,0.5)}50%{border-color:rgba(255,215,0,0.5)}}
+.fish-card .card-visual{display:block;margin:0 auto 6px}.fish-card .card-visual img{width:48px;height:48px;object-fit:contain}
+.fish-card.uncaught .card-visual{filter:brightness(0) saturate(0) opacity(0.2)}
+.fish-card .card-name{font-size:11px;font-weight:700;color:rgba(255,255,255,0.7)}.fish-card.uncaught .card-name{color:rgba(255,255,255,0.2)}
+.fish-card .card-best{font-size:10px;color:#ffd700;margin-top:2px}.fish-card .card-rarity{font-size:9px;font-weight:700;margin-top:3px}
+.level-up{position:absolute;top:25%;left:50%;transform:translate(-50%,-50%) scale(0);font-family:'Fredoka One',cursive;font-size:32px;color:#ffd700;text-shadow:0 0 30px rgba(255,215,0,0.6);opacity:0;z-index:90;white-space:nowrap}
+.level-up.show{animation:levelUpAnim 2s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes levelUpAnim{0%{transform:translate(-50%,-50%) scale(0);opacity:0}20%{transform:translate(-50%,-50%) scale(1.2);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-80%) scale(.8);opacity:0}}
+.missed-text{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%) scale(0);font-family:'Fredoka One',cursive;font-size:22px;color:#ff6b6b;text-shadow:0 0 20px rgba(255,100,100,0.4);opacity:0;z-index:90;white-space:nowrap}
+.missed-text.show{animation:missedAnim 1.5s ease forwards}
+@keyframes missedAnim{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.1);opacity:1}70%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-70%) scale(.8);opacity:0}}
+.new-badge{display:inline-block;background:#e63946;color:#fff;font-family:'Fredoka One',cursive;font-size:11px;padding:2px 8px;border-radius:10px;margin-bottom:6px;animation:newPulse 1s ease-in-out infinite}
+@keyframes newPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.xp-bar-container{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);width:min(250px,60vw);height:6px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,#4caf50,#8bc34a);border-radius:10px;transition:width .5s ease}
+.xp-label{position:absolute;bottom:128px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;white-space:nowrap}
+@media(max-width:480px){.score-bar{padding:10px 14px}.score-item{font-size:14px;gap:5px}.score-item .icon{font-size:18px}.cast-btn{width:70px;height:70px;font-size:11px;bottom:24px}.catch-popup{padding:24px 28px}.catch-popup .fish-visual img{width:64px;height:64px}.catch-popup .fish-visual .emoji-fallback{font-size:48px}.catch-popup .fish-name{font-size:20px}.xp-bar-container{bottom:104px}.xp-label{bottom:112px}.avatar-container{top:52px;left:14px}.avatar-img{width:38px;height:38px}.avatar-name{font-size:12px}}

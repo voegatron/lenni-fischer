@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Fischer-Abenteuer - De Lenni gaht go fische</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div class="start-screen" id="startScreen">
+  <img src="static/boat.png" class="start-boat-preview" id="startBoatPreview" onerror="this.classList.add('hidden');document.getElementById('startFishFallback').style.display='block';">
+  <div class="start-fish-fallback" id="startFishFallback" style="display:none;">🎣</div>
+  <div class="start-title">Fischer-Abenteuer</div>
+  <div class="start-subtitle">De Lenni gaht go fische!</div>
+  <div class="start-avatar-area">
+    <img src="static/avatar.png" class="start-avatar-img" id="startAvatar" onerror="this.classList.add('hidden')">
+    <div class="player-name-label" style="font-size:22px;color:#ffd700;">Lenni</div>
+  </div>
+  <button class="start-btn" id="startBtn">Los geht's!</button>
+  <div class="start-tips">WERFEN → WARTEN → EINHOLEN<br>Finde alle 21 Fischarten 🐟</div>
+</div>
+<div class="ui-overlay" id="gameUI" style="display:none;">
+  <div class="score-bar">
+    <div class="score-item"><span class="icon">🪙</span><span class="value" id="coins">0</span></div>
+    <div class="score-item"><span class="icon">⭐</span><span class="value" id="level">Level 1</span></div>
+    <div class="score-item"><span class="icon">🐟</span><span class="value" id="caught">0</span></div>
+  </div>
+  <div class="avatar-container"><img src="static/avatar.png" class="avatar-img" id="gameAvatar" onerror="this.style.display='none'"><div class="avatar-name" id="avatarName"></div></div>
+  <button class="collection-btn" id="collectionBtn">📖 Sammlung</button>
+  <div class="depth-meter" id="depthMeter"><div class="depth-fill" id="depthFill"></div></div>
+  <div class="depth-label" id="depthLabel">TIEFE</div>
+  <div class="xp-label" id="xpLabel">0 / 100 EP</div>
+  <div class="xp-bar-container"><div class="xp-fill" id="xpFill"></div></div>
+  <button class="cast-btn" id="castBtn">WERFEN</button>
+  <div class="catch-popup" id="catchPopup">
+    <div class="fish-visual" id="catchVisual"></div><div id="catchNewBadge"></div>
+    <div class="fish-name" id="catchName"></div><div class="fish-weight" id="catchWeight"></div>
+    <div class="fish-rarity" id="catchRarity"></div><div class="fish-coins" id="catchCoins"></div>
+    <button class="ok-btn" id="okBtn">Weiter!</button>
+  </div>
+  <div class="level-up" id="levelUp"></div>
+  <div class="missed-text" id="missedText">Der Fisch ist entkommen!</div>
+</div>
+<div class="collection-modal" id="collectionModal">
+  <div class="collection-header"><div class="collection-title">🐟 Fisch-Sammlung</div><button class="close-btn" id="closeCollection">✕</button></div>
+  <div class="collection-grid" id="collectionGrid"></div>
+</div>
+
+<script>
+// ─── GERMAN RARITY LABELS ───
+var RARITY_DE={common:'HÄUFIG',uncommon:'UNGEWÖHNLICH',rare:'SELTEN',epic:'EPISCH',legendary:'LEGENDÄR',mythical:'MYTHISCH'};
+
+var FISH=[
+  {id:0,name:"Sonnenfisch",emoji:"🐡",img:"sunfish.png",rarity:"common",minW:.2,maxW:2,coins:5,minDepth:0,xp:10},
+  {id:1,name:"Barsch",emoji:"🐟",img:"perch.png",rarity:"common",minW:.3,maxW:3,coins:8,minDepth:0,xp:12},
+  {id:2,name:"Wels",emoji:"🐱",img:"catfish.png",rarity:"common",minW:1,maxW:8,coins:12,minDepth:0,xp:15},
+  {id:3,name:"Schwarzbarsch",emoji:"🐟",img:"bass.png",rarity:"common",minW:1,maxW:10,coins:15,minDepth:0,xp:18},
+  {id:4,name:"Forelle",emoji:"🐠",img:"trout.png",rarity:"uncommon",minW:1,maxW:12,coins:25,minDepth:10,xp:25},
+  {id:5,name:"Lachs",emoji:"🐟",img:"salmon.png",rarity:"uncommon",minW:3,maxW:15,coins:30,minDepth:15,xp:30},
+  {id:6,name:"Hecht",emoji:"🐊",img:"pike.png",rarity:"uncommon",minW:2,maxW:20,coins:35,minDepth:15,xp:32},
+  {id:7,name:"Karpfen",emoji:"🐟",img:"carp.png",rarity:"uncommon",minW:2,maxW:25,coins:28,minDepth:10,xp:28},
+  {id:8,name:"Rotbarsch",emoji:"🐠",img:"red_snapper.png",rarity:"rare",minW:3,maxW:20,coins:50,minDepth:25,xp:45},
+  {id:9,name:"Thunfisch",emoji:"🐟",img:"tuna.png",rarity:"rare",minW:10,maxW:80,coins:65,minDepth:30,xp:55},
+  {id:10,name:"Schwertfisch",emoji:"⚔️",img:"swordfish.png",rarity:"rare",minW:15,maxW:120,coins:80,minDepth:35,xp:60},
+  {id:11,name:"Barrakuda",emoji:"🦈",img:"barracuda.png",rarity:"rare",minW:5,maxW:40,coins:70,minDepth:30,xp:50},
+  {id:12,name:"Goldmakrele",emoji:"🐬",img:"mahi_mahi.png",rarity:"rare",minW:5,maxW:30,coins:60,minDepth:25,xp:48},
+  {id:13,name:"Marlin",emoji:"🏹",img:"marlin.png",rarity:"epic",minW:50,maxW:250,coins:150,minDepth:45,xp:80},
+  {id:14,name:"Riesenzackenbarsch",emoji:"🐡",img:"giant_grouper.png",rarity:"epic",minW:30,maxW:180,coins:120,minDepth:40,xp:75},
+  {id:15,name:"Muräne",emoji:"🐍",img:"moray_eel.png",rarity:"epic",minW:5,maxW:30,coins:100,minDepth:40,xp:70},
+  {id:16,name:"Anglerfisch",emoji:"🔦",img:"anglerfish.png",rarity:"epic",minW:10,maxW:50,coins:130,minDepth:50,xp:85},
+  {id:17,name:"Walhai",emoji:"🐋",img:"whale_shark.png",rarity:"legendary",minW:500,maxW:2000,coins:500,minDepth:60,xp:200},
+  {id:18,name:"Riesenkalmar",emoji:"🦑",img:"giant_squid.png",rarity:"legendary",minW:100,maxW:600,coins:400,minDepth:65,xp:180},
+  {id:19,name:"Goldener Koi",emoji:"✨",img:"golden_koi.png",rarity:"legendary",minW:2,maxW:8,coins:1000,minDepth:50,xp:250},
+  {id:20,name:"Mola Mola",emoji:"🌙",img:"mola_mola.png",rarity:"mythical",minW:200,maxW:2300,coins:2500,minDepth:75,xp:500}
+];
+var RARITY_WEIGHTS={common:45,uncommon:30,rare:16,epic:7,legendary:2,mythical:0.3};
+var RARITY_COLORS={common:'#b0b0b0',uncommon:'#66bb6a',rare:'#42a5f5',epic:'#ba68c8',legendary:'#ffd700',mythical:'#ff6ec7'};
+
+var fishImages={};
+FISH.forEach(function(f){var o=new Image(),e={img:o,loaded:false};o.onload=function(){e.loaded=true};o.onerror=function(){e.loaded=false};o.src='static/fish/'+f.img;fishImages[f.id]=e});
+function fishVisualHTML(id,sz){var e=fishImages[id],f=FISH[id];if(e&&e.loaded)return'<img src="static/fish/'+f.img+'" width="'+sz+'" height="'+sz+'" style="object-fit:contain;">';return'<span class="emoji-fallback" style="font-size:'+Math.round(sz*.8)+'px;line-height:1;">'+f.emoji+'</span>'}
+function drawFishCanvas(id,x,y,sz){var e=fishImages[id];if(e&&e.loaded){ctx.drawImage(e.img,x-sz/2,y-sz/2,sz,sz)}else{ctx.font=sz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(FISH[id].emoji,x,y)}}
+
+var boatImg=new Image(),boatLoaded=false,boatNatW=1,boatNatH=1;
+boatImg.onload=function(){boatLoaded=true;boatNatW=boatImg.naturalWidth;boatNatH=boatImg.naturalHeight;resize()};
+boatImg.onerror=function(){boatLoaded=false};boatImg.src='static/boat.png';
+var ROD_TIP_X=1.0,ROD_TIP_Y=0.0;
+var BOAT_W=180,BOAT_H=100;
+
+var avatarLoaded=false,avatarImg=new Image();
+avatarImg.onload=function(){avatarLoaded=true};avatarImg.onerror=function(){avatarLoaded=false};avatarImg.src='static/avatar.png';
+var playerName='Lenni';
+
+var state={coins:0,level:1,xp:0,xpNeeded:100,totalCaught:0,collection:{},phase:'idle',hookX:0,hookY:0,hookDepth:0,maxDepth:30,waitTimer:0,hookTimer:0,reelProgress:0,currentFish:null,currentWeight:0,bobberX:0,bobberY:0};
+
+var canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d'),W,H,waterY,dpr=window.devicePixelRatio||1;
+function resize(){W=window.innerWidth;H=window.innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);waterY=H*0.38;BOAT_W=Math.min(200,W*0.35);BOAT_H=boatLoaded&&boatNatW>1?BOAT_W*(boatNatH/boatNatW):BOAT_W*0.58}
+window.addEventListener('resize',resize);resize();
+
+var bubbles=[],splashes=[],fishSwimmers=[];
+function mkBub(x,y){return{x:x,y:y,r:Math.random()*3+1,spd:Math.random()*.5+.3,w:Math.random()*Math.PI*2,a:Math.random()*.4+.2}}
+function upBub(b){b.y-=b.spd;b.w+=.03;b.x+=Math.sin(b.w)*.3;return b.y>waterY-10}
+function drBub(b){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+b.a+')';ctx.fill()}
+function mkSpl(x,y){return{x:x,y:y,life:1,d:Array.from({length:8},function(){return{vx:(Math.random()-.5)*6,vy:-Math.random()*4-2,r:Math.random()*3+1,dx:0,dy:0}})}}
+function upSpl(s){s.life-=.03;s.d.forEach(function(d){d.vy+=.15;d.dx+=d.vx;d.dy+=d.vy});return s.life>0}
+function drSpl(s){s.d.forEach(function(d){ctx.beginPath();ctx.arc(s.x+d.dx,s.y+d.dy,d.r*s.life,0,Math.PI*2);ctx.fillStyle='rgba(150,210,255,'+(s.life*.6)+')';ctx.fill()})}
+function mkFsh(init){var dir=Math.random()>.5?1:-1;return{dir:dir,x:init?Math.random()*W:(dir>0?-30:W+30),y:waterY+40+Math.random()*(H-waterY-100),spd:Math.random()*1.5+.5,sz:Math.random()*12+6,w:Math.random()*Math.PI*2,col:['#4a90d9','#6ab04c','#e17055','#74b9ff','#55a3c4'][Math.floor(Math.random()*5)],a:Math.random()*.3+.15}}
+function upFsh(f){f.x+=f.spd*f.dir;f.w+=.06;f.y+=Math.sin(f.w)*.5;if((f.dir>0&&f.x>W+40)||(f.dir<0&&f.x<-40)){var n=mkFsh(false);f.dir=n.dir;f.x=n.x;f.y=n.y;f.spd=n.spd;f.sz=n.sz;f.col=n.col;f.a=n.a}}
+function drFsh(f){ctx.save();ctx.translate(f.x,f.y);ctx.scale(f.dir,1);ctx.globalAlpha=f.a;ctx.fillStyle=f.col;ctx.beginPath();ctx.ellipse(0,0,f.sz,f.sz*.5,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(-f.sz,0);ctx.lineTo(-f.sz-f.sz*.6,-f.sz*.4);ctx.lineTo(-f.sz-f.sz*.6,f.sz*.4);ctx.closePath();ctx.fill();ctx.globalAlpha=f.a*1.5;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(f.sz*.4,-f.sz*.1,f.sz*.12,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.restore()}
+for(var si=0;si<12;si++)fishSwimmers.push(mkFsh(true));
+
+var waveTime=0;
+function getWaveY(x,t){return waterY+Math.sin(x*.015+t)*3+Math.sin(x*.008+t*.7)*5}
+
+var time=0,boatCX=0,boatCY=0,rodTipX=0,rodTipY=0;
+
+function drawSky(){var g=ctx.createLinearGradient(0,0,0,waterY);g.addColorStop(0,'#0b1a30');g.addColorStop(1,'#152a48');ctx.fillStyle=g;ctx.fillRect(0,0,W,waterY+10);for(var i=0;i<50;i++){var sx=((12345*(i+1)*7)%1000)/1000*W,sy=((12345*(i+1)*13)%1000)/1000*waterY*.7,tw=Math.sin(time*.003+i)*.3+.5;ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+(tw*.6)+')';ctx.fill()}var mx=W*.8,my=waterY*.25;ctx.beginPath();ctx.arc(mx,my,25,0,Math.PI*2);ctx.fillStyle='rgba(255,250,220,0.9)';ctx.fill();ctx.beginPath();ctx.arc(mx+8,my-5,22,0,Math.PI*2);ctx.fillStyle='#0e1e36';ctx.fill();var mg=ctx.createRadialGradient(mx,my,10,mx,my,80);mg.addColorStop(0,'rgba(255,250,220,0.1)');mg.addColorStop(1,'transparent');ctx.fillStyle=mg;ctx.fillRect(mx-80,my-80,160,160)}
+function drawWater(){var wg=ctx.createLinearGradient(0,waterY,0,H);wg.addColorStop(0,'#0c3d5f');wg.addColorStop(.3,'#0a2e4a');wg.addColorStop(.7,'#071e32');wg.addColorStop(1,'#040e1a');ctx.fillStyle=wg;ctx.beginPath();ctx.moveTo(0,waterY);for(var x=0;x<=W;x+=4)ctx.lineTo(x,getWaveY(x,waveTime));ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(100,180,255,0.15)';ctx.lineWidth=2;ctx.beginPath();for(var x2=0;x2<=W;x2+=4){x2===0?ctx.moveTo(x2,getWaveY(x2,waveTime)):ctx.lineTo(x2,getWaveY(x2,waveTime))}ctx.stroke();for(var li=0;li<5;li++){var rx=W*.3+li*W*.12+Math.sin(time*.001+li)*20;ctx.beginPath();ctx.moveTo(rx,waterY);ctx.lineTo(rx-30,H);ctx.lineTo(rx+30,H);ctx.closePath();ctx.fillStyle='rgba(80,160,220,'+(0.02+Math.sin(time*.002+li)*.01)+')';ctx.fill()}}
+function drawSeabed(){var sy=H-30;ctx.fillStyle='#1a1a0e';ctx.fillRect(0,sy,W,30);for(var i=0;i<15;i++){var sx=((i*73+17)%100)/100*W,sh=20+(i*13%30),sw=Math.sin(time*.003+i*.7)*5;ctx.strokeStyle='rgba(34,100,40,'+(0.3+(i%3)*.1)+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(sx+sw,sy-sh*.5,sx+sw*1.5,sy-sh);ctx.stroke()}}
+
+function drawBoat(){
+  if(boatLoaded&&boatNatW>1)BOAT_H=BOAT_W*(boatNatH/boatNatW);
+  boatCX=W*0.42;var waveAt=getWaveY(boatCX,waveTime),tilt=Math.sin(waveTime+1)*0.025;
+  if(boatLoaded){var hullFrac=0.78,topY=waveAt-BOAT_H*hullFrac;boatCY=topY+BOAT_H/2;ctx.save();ctx.translate(boatCX,boatCY);ctx.rotate(tilt);ctx.drawImage(boatImg,-BOAT_W/2,-BOAT_H/2,BOAT_W,BOAT_H);ctx.restore();var lx=-BOAT_W/2+BOAT_W*ROD_TIP_X,ly=-BOAT_H/2+BOAT_H*ROD_TIP_Y;var c=Math.cos(tilt),s=Math.sin(tilt);rodTipX=boatCX+c*lx-s*ly;rodTipY=boatCY+s*lx+c*ly}
+  else{boatCY=waveAt-8;ctx.save();ctx.translate(boatCX,boatCY);ctx.rotate(tilt);ctx.beginPath();ctx.moveTo(-35,0);ctx.quadraticCurveTo(-30,18,0,20);ctx.quadraticCurveTo(30,18,35,0);ctx.closePath();ctx.fillStyle='#5a3825';ctx.fill();ctx.strokeStyle='#3e2518';ctx.lineWidth=1.5;ctx.stroke();ctx.beginPath();ctx.moveTo(-28,4);ctx.quadraticCurveTo(0,8,28,4);ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#4a3020';ctx.fillRect(-2,-45,4,45);ctx.fillStyle='#e8c170';ctx.beginPath();ctx.arc(8,-22,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d35400';ctx.fillRect(4,-16,8,14);ctx.strokeStyle='#6d4c30';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(12,-14);ctx.quadraticCurveTo(45,-40,55,-25);ctx.stroke();ctx.restore();var c2=Math.cos(tilt),s2=Math.sin(tilt);rodTipX=boatCX+c2*55-s2*(-25);rodTipY=boatCY+s2*55+c2*(-25)}
+  if(state.phase!=='idle'){
+    var bobX=state.hookX,bobY=getWaveY(bobX,waveTime),bobBounce=state.phase==='hooked'?Math.sin(time*.15)*4:Math.sin(time*.02)*1;
+    bobY+=bobBounce;state.bobberX=bobX;state.bobberY=bobY;
+    ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(rodTipX,rodTipY);var sagX=(rodTipX+bobX)/2,sagY=(rodTipY+bobY)/2+8;ctx.quadraticCurveTo(sagX,sagY,bobX,bobY);ctx.stroke();
+    if(state.hookY>bobY+5){ctx.beginPath();ctx.moveTo(bobX,bobY+5);ctx.lineTo(state.hookX,state.hookY);ctx.stroke()}
+    if(state.phase!=='reeling'&&state.phase!=='caught'){ctx.beginPath();ctx.arc(bobX,bobY,5,Math.PI,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.beginPath();ctx.arc(bobX,bobY,5,0,Math.PI);ctx.fillStyle='#ff3333';ctx.fill()}
+  }
+}
+
+function drawHook(){
+  if(state.phase==='idle')return;var hx=state.hookX,hy=state.hookY;
+  if(hy>waterY){var gr=6+Math.sin(time*.05)*2,glow=ctx.createRadialGradient(hx,hy,0,hx,hy,gr*3);glow.addColorStop(0,'rgba(255,200,50,0.25)');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(hx,hy,gr*3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#c0c0c0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(hx,hy-6);ctx.lineTo(hx,hy+2);ctx.arc(hx+4,hy+2,4,Math.PI,Math.PI*.3,true);ctx.stroke();ctx.beginPath();ctx.arc(hx,hy+7,3,0,Math.PI*2);ctx.fillStyle='#ff9800';ctx.fill()}
+  if(state.phase==='hooked'){var bo=Math.sin(time*.1)*5;ctx.font='bold 28px Fredoka One';ctx.fillStyle='#ffd700';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',state.bobberX,state.bobberY-25+bo);var rp=(time*.05)%2;ctx.beginPath();ctx.arc(state.bobberX,state.bobberY,10+rp*15,0,Math.PI*2);ctx.strokeStyle='rgba(255,215,0,'+Math.max(0,1-rp*.5)+')';ctx.lineWidth=2;ctx.stroke()}
+  if(state.phase==='reeling'&&state.currentFish){var tn=Math.sin(time*.08)*3;ctx.save();ctx.translate(hx+tn,hy);var fs=1+Math.sin(time*.06)*.1;ctx.scale(fs,fs);drawFishCanvas(state.currentFish.id,0,0,30);ctx.restore()}
+}
+
+function selectFish(){
+  var d=state.hookDepth,av=FISH.filter(function(f){return d>=f.minDepth});if(!av.length)return FISH[0];
+  var rb=1+state.level*.05,tw=0;
+  var wt=av.map(function(f){var w=RARITY_WEIGHTS[f.rarity];if(f.rarity==='rare')w*=rb;if(f.rarity==='epic')w*=rb*1.2;if(f.rarity==='legendary')w*=rb*1.5;if(f.rarity==='mythical')w*=rb*2;tw+=w;return{fish:f,weight:w}});
+  var r=Math.random()*tw;for(var i=0;i<wt.length;i++){r-=wt[i].weight;if(r<=0)return wt[i].fish}return av[0];
+}
+function resetToIdle(){state.phase='idle';castBtn.textContent='WERFEN';castBtn.className='cast-btn';depthMeter.classList.remove('show');depthLabel.classList.remove('show')}
+function cast(){
+  if(state.phase==='idle'){state.phase='casting';state.hookX=rodTipX;state.hookY=getWaveY(rodTipX,waveTime);state.hookDepth=0;splashes.push(mkSpl(state.hookX,state.hookY));castBtn.textContent='...';setTimeout(function(){if(state.phase==='casting')state.phase='sinking'},300)}
+  else if(state.phase==='hooked'){state.phase='reeling';state.reelProgress=0;castBtn.textContent='EINHOLEN!';castBtn.className='cast-btn reeling'}
+  else if(state.phase==='reeling'){state.reelProgress+=8+Math.random()*5;for(var i=0;i<3;i++)bubbles.push(mkBub(state.hookX+(Math.random()-.5)*20,state.hookY))}
+}
+function catchFish(){
+  var f=state.currentFish,w=state.currentWeight,c=Math.round(f.coins*(w/f.maxW+.5));
+  state.coins+=c;state.totalCaught++;state.xp+=f.xp;var isNew=!state.collection[f.id];
+  if(!state.collection[f.id])state.collection[f.id]={caught:0,bestWeight:0};
+  state.collection[f.id].caught++;if(w>state.collection[f.id].bestWeight)state.collection[f.id].bestWeight=w;
+  while(state.xp>=state.xpNeeded){state.xp-=state.xpNeeded;state.level++;state.xpNeeded=Math.round(100*Math.pow(1.3,state.level-1));state.maxDepth=30+state.level*5;showLevelUp()}
+  showCatchPopup(f,w,c,isNew);updateUI();
+}
+function showCatchPopup(f,w,c,isNew){
+  state.phase='caught';var ws=w>=1?w.toFixed(1)+' kg':(w*1000).toFixed(0)+' g';
+  document.getElementById('catchVisual').innerHTML=fishVisualHTML(f.id,80);
+  document.getElementById('catchNewBadge').innerHTML=isNew?'<span class="new-badge">Neue Fischart!</span>':'';
+  document.getElementById('catchName').textContent=f.name;document.getElementById('catchWeight').textContent=ws;
+  var re=document.getElementById('catchRarity');re.textContent=RARITY_DE[f.rarity]||f.rarity.toUpperCase();re.className='fish-rarity rarity-'+f.rarity;
+  document.getElementById('catchCoins').textContent='+'+c+' 🪙';document.getElementById('catchPopup').classList.add('show');castBtn.style.display='none';
+}
+function dismissCatch(){document.getElementById('catchPopup').classList.remove('show');resetToIdle();castBtn.style.display='flex'}
+function showLevelUp(){var e=document.getElementById('levelUp');e.textContent='⭐ LEVEL '+state.level+'! ⭐';e.classList.remove('show');void e.offsetWidth;e.classList.add('show')}
+function showMissed(){var e=document.getElementById('missedText');e.classList.remove('show');void e.offsetWidth;e.classList.add('show')}
+function updateUI(){document.getElementById('coins').textContent=state.coins;document.getElementById('level').textContent='Level '+state.level;document.getElementById('caught').textContent=state.totalCaught;document.getElementById('xpFill').style.width=(state.xp/state.xpNeeded*100)+'%';document.getElementById('xpLabel').textContent=state.xp+' / '+state.xpNeeded+' EP'}
+
+function update(){
+  waveTime+=.02;time++;bubbles=bubbles.filter(upBub);splashes=splashes.filter(upSpl);fishSwimmers.forEach(upFsh);
+  if(Math.random()<.05)bubbles.push(mkBub(Math.random()*W,H-Math.random()*50));
+  if(state.phase==='sinking'){state.hookDepth+=.3;state.hookY+=.8;if(Math.random()<.15)bubbles.push(mkBub(state.hookX+(Math.random()-.5)*10,state.hookY));if(state.hookDepth>=state.maxDepth*.5+Math.random()*state.maxDepth*.5||state.hookY>H-50){state.phase='waiting';state.waitTimer=60+Math.random()*180;castBtn.textContent='WARTEN...'}depthMeter.classList.add('show');depthLabel.classList.add('show');depthFill.style.height=Math.min(100,state.hookDepth/state.maxDepth*100)+'%'}
+  if(state.phase==='waiting'){state.waitTimer--;if(Math.random()<.03)state.hookX+=(Math.random()-.5)*4;if(state.waitTimer<=0){state.phase='hooked';state.hookTimer=180;state.currentFish=selectFish();state.currentWeight=state.currentFish.minW+Math.random()*(state.currentFish.maxW-state.currentFish.minW);state.currentWeight=Math.round(state.currentWeight*10)/10;castBtn.textContent='BISS!';castBtn.className='cast-btn hooked'}}
+  if(state.phase==='hooked'){state.hookTimer--;state.hookX+=Math.sin(time*.2)*2;if(state.hookTimer<=0){showMissed();resetToIdle()}}
+  if(state.phase==='reeling'){state.hookY-=1.5;state.hookDepth-=.5;state.hookX+=Math.sin(time*.15)*3;if(state.reelProgress>=100||state.hookY<=waterY){splashes.push(mkSpl(state.hookX,waterY));catchFish();depthMeter.classList.remove('show');depthLabel.classList.remove('show')}depthFill.style.height=Math.max(0,state.hookDepth/state.maxDepth*100)+'%'}
+}
+function render(){ctx.clearRect(0,0,W,H);drawSky();drawWater();drawSeabed();fishSwimmers.forEach(drFsh);bubbles.forEach(drBub);splashes.forEach(drSpl);drawBoat();drawHook()}
+function gameLoop(){update();render();requestAnimationFrame(gameLoop)}
+
+function showCollection(){
+  var g=document.getElementById('collectionGrid');g.innerHTML='';
+  FISH.forEach(function(f){var c=state.collection[f.id];var d=document.createElement('div');
+  var cardClass='fish-card '+(c?'caught':'uncaught');
+  if(c&&f.rarity==='mythical')cardClass+=' mythical-card';
+  d.className=cardClass;
+  var b='';if(c){b=c.bestWeight>=1?'<div class="card-best">'+c.bestWeight.toFixed(1)+'kg · x'+c.caught+'</div>':'<div class="card-best">'+(c.bestWeight*1000).toFixed(0)+'g · x'+c.caught+'</div>'}
+  d.innerHTML='<span class="card-visual">'+fishVisualHTML(f.id,48)+'</span><div class="card-name">'+(c?f.name:'???')+'</div>'+(c?'<div class="card-rarity" style="color:'+RARITY_COLORS[f.rarity]+'">'+(RARITY_DE[f.rarity]||f.rarity.toUpperCase())+'</div>':'')+b;g.appendChild(d)});
+  collectionModal.classList.add('show');
+}
+
+var castBtn=document.getElementById('castBtn'),depthMeter=document.getElementById('depthMeter'),depthFill=document.getElementById('depthFill'),depthLabel=document.getElementById('depthLabel'),collectionModal=document.getElementById('collectionModal');
+document.getElementById('startBtn').addEventListener('click',function(){document.getElementById('avatarName').textContent='Lenni';document.getElementById('startScreen').classList.add('hidden');document.getElementById('gameUI').style.display='block';setTimeout(function(){document.getElementById('startScreen').style.display='none'},600)});
+var castCD=false;function handleCast(e){e.preventDefault();if(castCD)return;castCD=true;setTimeout(function(){castCD=false},100);cast()}
+castBtn.addEventListener('click',handleCast);castBtn.addEventListener('touchstart',handleCast,{passive:false});
+document.getElementById('okBtn').addEventListener('click',dismissCatch);
+document.getElementById('collectionBtn').addEventListener('click',showCollection);
+document.getElementById('closeCollection').addEventListener('click',function(){collectionModal.classList.remove('show')});
+var lastTE=0;document.addEventListener('touchend',function(e){var n=Date.now();if(n-lastTE<=300)e.preventDefault();lastTE=n},false);
+gameLoop();
+</script>
+</body>
+</html>
