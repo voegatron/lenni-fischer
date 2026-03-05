@@ -18,7 +18,9 @@
     <img src="static/avatar.png" class="start-avatar-img" id="startAvatar" onerror="this.classList.add('hidden')">
     <div class="player-name-label" style="font-size:22px;color:#ffd700;">Lenni</div>
   </div>
-  <button class="start-btn" id="startBtn">Los geht's!</button>
+  <button class="start-btn continue-btn" id="continueBtn" style="display:none;">Weiterspielen</button>
+  <div class="save-info" id="saveInfo" style="display:none;"></div>
+  <button class="start-btn" id="startBtn">Neues Spiel</button>
   <div class="start-tips">WERFEN → WARTEN → EINHOLEN<br>Finde alle 21 Fischarten 🐟</div>
 </div>
 <div class="ui-overlay" id="gameUI" style="display:none;">
@@ -198,7 +200,73 @@ function showCollection(){
 }
 
 var castBtn=document.getElementById('castBtn'),depthMeter=document.getElementById('depthMeter'),depthFill=document.getElementById('depthFill'),depthLabel=document.getElementById('depthLabel'),collectionModal=document.getElementById('collectionModal');
-document.getElementById('startBtn').addEventListener('click',function(){document.getElementById('avatarName').textContent='Lenni';document.getElementById('startScreen').classList.add('hidden');document.getElementById('gameUI').style.display='block';setTimeout(function(){document.getElementById('startScreen').style.display='none'},600)});
+
+// ─── SAVE / LOAD SYSTEM (localStorage) ───
+var SAVE_KEY='fischerAbenteuerSave';
+
+function saveGame(){
+  try{
+    var saveData={
+      coins:state.coins,level:state.level,xp:state.xp,xpNeeded:state.xpNeeded,
+      totalCaught:state.totalCaught,collection:state.collection,maxDepth:state.maxDepth,
+      savedAt:Date.now()
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(saveData));
+  }catch(e){}
+}
+
+function loadGame(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return null;
+    return JSON.parse(raw);
+  }catch(e){return null}
+}
+
+function deleteSave(){
+  try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+}
+
+function applySave(save){
+  state.coins=save.coins||0;
+  state.level=save.level||1;
+  state.xp=save.xp||0;
+  state.xpNeeded=save.xpNeeded||100;
+  state.totalCaught=save.totalCaught||0;
+  state.collection=save.collection||{};
+  state.maxDepth=save.maxDepth||30;
+}
+
+// Auto-save after every catch
+var _origCatchFish=catchFish;
+catchFish=function(){_origCatchFish();saveGame()};
+
+// Check for existing save on load
+var existingSave=loadGame();
+if(existingSave){
+  document.getElementById('continueBtn').style.display='block';
+  document.getElementById('startBtn').classList.add('secondary');
+  var speciesCount=Object.keys(existingSave.collection||{}).length;
+  var info=document.getElementById('saveInfo');
+  info.style.display='block';
+  info.innerHTML='⭐ Level '+existingSave.level+' · 🪙 '+existingSave.coins+' · 🐟 '+speciesCount+'/21 Arten';
+}
+
+function startGame(loadSave){
+  if(loadSave&&existingSave){applySave(existingSave)}
+  else{deleteSave();state.coins=0;state.level=1;state.xp=0;state.xpNeeded=100;state.totalCaught=0;state.collection={};state.maxDepth=30}
+  updateUI();
+  document.getElementById('avatarName').textContent='Lenni';
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameUI').style.display='block';
+  setTimeout(function(){document.getElementById('startScreen').style.display='none'},600);
+}
+
+document.getElementById('continueBtn').addEventListener('click',function(){startGame(true)});
+document.getElementById('startBtn').addEventListener('click',function(){
+  if(existingSave){if(confirm('Wirklich neu starten? Dein Spielstand wird gelöscht!')){startGame(false)}}
+  else{startGame(false)}
+});
 var castCD=false;function handleCast(e){e.preventDefault();if(castCD)return;castCD=true;setTimeout(function(){castCD=false},100);cast()}
 castBtn.addEventListener('click',handleCast);castBtn.addEventListener('touchstart',handleCast,{passive:false});
 document.getElementById('okBtn').addEventListener('click',dismissCatch);
