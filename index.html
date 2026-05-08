@@ -268,7 +268,7 @@ document.getElementById('startBtn').addEventListener('click',function(){
   else{startGame(false)}
 });
 var castCD=false;function handleCast(e){e.preventDefault();if(castCD)return;castCD=true;setTimeout(function(){castCD=false},100);cast()}
-castBtn.addEventListener('click',handleCast);castBtn.addEventListener('touchstart',handleCast,{passive:false});
+castBtn.addEventListener('pointerup',handleCast);
 document.getElementById('okBtn').addEventListener('click',dismissCatch);
 document.getElementById('collectionBtn').addEventListener('click',showCollection);
 document.getElementById('closeCollection').addEventListener('click',function(){collectionModal.classList.remove('show')});
